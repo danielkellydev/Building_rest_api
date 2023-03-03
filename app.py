@@ -12,7 +12,7 @@ books = [
     {
         "name": "Lord of the Rings",
         "price": 6.99,
-        "isbn": 9781536831139
+        "isbn": 978153683156335
     }
 ]
 
@@ -102,4 +102,22 @@ def update_book(isbn):
     response.status_code = 200
     return response
 
-app.run(port=5000)
+#DELETE
+@app.route('/books/<int:isbn>', methods=['DELETE'])
+def delete_book(isbn):
+    i = 0
+    for book in books:
+        if book["isbn"] == isbn:
+            books.pop(i)
+            response = jsonify({"message": "Book with ISBN number " + str(isbn) + " was removed"})
+            response.status_code = 204
+            return response
+        i += 1
+    invalidBookObjectErrorMsg = {
+        "error": "Book with the ISBN number that was provided was not found, so therefore unable to delete"
+    }
+    response = jsonify(invalidBookObjectErrorMsg)
+    response.status_code = 404
+    return response
+
+app.run(port=5000, debug=True)
