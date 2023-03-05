@@ -3,6 +3,37 @@ from flask_sqlalchemy import SQLAlchemy
 from BookModel import *
 import json
 from settings import *
+import jwt, datetime
+from UserModel import User
+from functools import wraps
+
+app.config['SECRET_KEY'] = 'meow'
+
+def token_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        token = request.args.get('token')
+        try:
+            jwt.decode(token, app.config['SECRET_KEY'])
+            return f(*args, **kwargs)
+        except:
+            return jsonify({"error": "Need a valid token to view this page"}), 401
+        
+    return wrapper
+
+@app.route('/login', methods=['POST'])
+def get_token():
+    request_data = request.get_json()
+    username = str(request_data['username'])
+    password = str(request_data['password'])
+
+    match = User.username_password_match(username, password)
+    if match:
+        expiration_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=100)
+        token = jwt.encode({'exp': expiration_date}, app.config['SECRET_KEY'], algorithm='HS256')
+        return token
+    else:
+        return Response ('', 401, mimetype='application/json')
 
 
 
@@ -13,8 +44,8 @@ def validBookObject(bookObject):
         return False
 
 
-
 @app.route('/books')
+@token_required
 def get_books():
     return jsonify({"books": Book.get_all_books()})
 
